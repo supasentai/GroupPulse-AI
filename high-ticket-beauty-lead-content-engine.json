@@ -1,0 +1,650 @@
+{
+  "name": "High-ticket Beauty - Lead & Content Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "## HIGH-TICKET BEAUTY — LEAD & CONTENT ENGINE\n\n### Trước khi chạy\n1. Cài community node `n8n-nodes-apify`.\n2. Kết nối credential cho Google Sheets, Apify, Google Vertex AI và Telegram.\n3. Sửa node **Business Config**: dịch vụ, khu vực, nền tảng, CTA và ngưỡng lead.\n4. Tạo Google Sheet gồm 3 tab:\n   - `listgroup`: `link_group`, `id_group`, `name_group`\n   - `leads`: `discovered_at`, `post_id`, `post_url`, `content`, `author_name`, `author_url`, `published_at`, `group`, `engagement`, `post_type`, `customer_stage`, `need`, `pain_point`, `desired_result`, `objections`, `location`, `buying_intent`, `service_fit`, `urgency`, `reachability`, `lead_score`, `lead_temperature`, `evidence`, `recommended_offer`, `next_action`, `draft_public_reply`, `draft_dm`, `content_priority`, `content_angle`, `confidence`, `status`\n   - `content_plan`: `generated_at`, `source_post_url`, `theme`, `platform`, `content_type`, `hook`, `caption`, `cta`, `visual_idea`, `compliance_note`, `status`\n5. Chọn đúng file/sheet trong 3 node Google Sheets và nhập Chat ID Telegram.\n6. Test thủ công trước; chỉ Publish khi output đã đúng.\n\n### Nguyên tắc\n- Không lọc cứng theo lượt tương tác. Engagement chỉ chiếm 5% lead score.\n- Chống trùng bằng workflow static data trong 30 ngày.\n- Không tự động bình luận/DM. AI chỉ tạo bản nháp để con người duyệt.\n- Không chẩn đoán, body-shaming, cam kết kết quả hay bịa testimonial.\n- Không lưu ảnh hoặc dữ liệu sức khỏe nhạy cảm nếu chưa có sự đồng ý của khách.",
+        "height": 1050,
+        "width": 900
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [-1500, -1240],
+      "id": "b6fa5151-1d6d-4c58-8ec4-71fb0c3f2e74",
+      "name": "Setup Guide"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-1500, -200],
+      "id": "9b0d83f5-daa3-47d2-9a71-791653185641",
+      "name": "Manual Test"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [-1500, 0],
+      "id": "ef9ab333-eb0b-4787-af7b-0f542f09c784",
+      "name": "Scan Every 2 Hours"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f4ca43f6-339d-4f0f-b953-6537d8d40bec",
+              "name": "businessName",
+              "value": "YOUR_BEAUTY_BRAND",
+              "type": "string"
+            },
+            {
+              "id": "e21465be-85d9-4c3d-b2a0-41f72062dadd",
+              "name": "serviceDescription",
+              "value": "Dịch vụ chăm sóc sắc đẹp cao cấp; hãy thay bằng dịch vụ cụ thể, kết quả mong muốn và điểm khác biệt",
+              "type": "string"
+            },
+            {
+              "id": "e35a952b-ffdb-4661-9668-b4f7c0ccb829",
+              "name": "targetCustomer",
+              "value": "Cá nhân có nhu cầu làm đẹp, ưu tiên chất lượng, độ an toàn và trải nghiệm hơn lựa chọn giá rẻ",
+              "type": "string"
+            },
+            {
+              "id": "9c574f06-aeaa-4b19-910f-d8e0662563c6",
+              "name": "serviceArea",
+              "value": "YOUR_SERVICE_AREA",
+              "type": "string"
+            },
+            {
+              "id": "fcd9bd63-3102-4370-baa0-b749192687e5",
+              "name": "offerPrice",
+              "value": "Từ 1.000 USD trở lên",
+              "type": "string"
+            },
+            {
+              "id": "f957835d-b695-45ed-91c7-0f4226611fba",
+              "name": "socialPlatform",
+              "value": "Facebook",
+              "type": "string"
+            },
+            {
+              "id": "29ac3194-7f85-464f-b42a-519375b09f9e",
+              "name": "conversionChannel",
+              "value": "Messenger / Instagram DM / Zalo / form tư vấn",
+              "type": "string"
+            },
+            {
+              "id": "e3da6cd9-7b25-4c2c-b5ab-20e13ca66636",
+              "name": "cta",
+              "value": "Đăng ký buổi đánh giá nhu cầu riêng với chuyên viên",
+              "type": "string"
+            },
+            {
+              "id": "ce3a4f84-aeca-4cbf-97de-85b8f25a9948",
+              "name": "hotLeadThreshold",
+              "value": 75,
+              "type": "number"
+            },
+            {
+              "id": "31a50a4f-cc99-4fa5-975a-89af7b28dcc5",
+              "name": "warmLeadThreshold",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "f650c548-53a2-4dd4-984d-350d101de146",
+              "name": "contentThreshold",
+              "value": 60,
+              "type": "number"
+            },
+            {
+              "id": "f8dfde74-1e0f-4794-83c4-d6871e4a27b8",
+              "name": "postsPerGroup",
+              "value": 10,
+              "type": "number"
+            },
+            {
+              "id": "4a70efac-eafe-41c2-a23a-cf61c74c83f9",
+              "name": "lookback",
+              "value": "1 day",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-1250, -100],
+      "id": "63cabd1d-fd72-4169-b1fb-dd31c2012363",
+      "name": "Business Config",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Beauty Lead Engine"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "listgroup",
+          "mode": "list",
+          "cachedResultName": "listgroup"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [-1000, -100],
+      "id": "a11dcc39-c62b-41dd-a2a2-e59f64703591",
+      "name": "Get Target Groups"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "78069198-f32a-47e4-944a-a2d49b0db8df",
+              "name": "startUrls",
+              "value": "={{ $(\"Get Target Groups\").all().filter(item => item.json.link_group).map(item => ({ url: item.json.link_group })) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [-760, -100],
+      "id": "0ba9fbba-78eb-44d5-a2d9-cf7b3805adb5",
+      "name": "Build Apify Input",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "Actors",
+        "operation": "Run actor",
+        "actorId": {
+          "__rl": true,
+          "value": "2chN8UQcH1CfxLRNE",
+          "mode": "list",
+          "cachedResultName": "facebook-groups-scraper"
+        },
+        "build": "",
+        "webhooks": "",
+        "useCustomBody": true,
+        "customBody": "={\n  \"onlyPostsNewerThan\": \"{{ $('Business Config').first().json.lookback }}\",\n  \"resultsLimit\": {{ $('Business Config').first().json.postsPerGroup }},\n  \"startUrls\": {{ $json.startUrls }},\n  \"viewOption\": \"CHRONOLOGICAL\"\n}",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [-520, -100],
+      "id": "33184612-63bb-4ac1-9896-72acd16be8bf",
+      "name": "Apify - Run Facebook Scraper",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "resource": "Datasets",
+        "operation": "Get items",
+        "datasetId": "={{ $json.data.defaultDatasetId }}",
+        "fields": "",
+        "omit": "",
+        "unwind": "",
+        "requestOptions": {}
+      },
+      "type": "n8n-nodes-apify.apify",
+      "typeVersion": 1,
+      "position": [-280, -100],
+      "id": "03524e09-04bb-41f1-ac54-c37885470465",
+      "name": "Apify - Get Posts"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [-40, -100],
+      "id": "5a313ce8-f6e9-46af-83d4-4a8c4b5b5201",
+      "name": "Split Posts"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const src = $json.data ?? $json;\nconst user = src.user ?? {};\nconst text = String(src.text ?? src.message ?? src.caption ?? '').trim();\nconst engagement = Number(src.likesCount ?? 0) + Number(src.commentsCount ?? 0) + Number(src.sharesCount ?? 0);\nconst postUrl = String(src.url ?? src.postUrl ?? src.link ?? '');\nconst postId = String(src.postId ?? src.id ?? postUrl ?? '');\nconst authorId = user.id ?? src.userId ?? '';\nreturn {\n  json: {\n    post_id: postId,\n    post_url: postUrl,\n    text,\n    author_name: String(user.name ?? src.userName ?? src.authorName ?? ''),\n    author_url: String(src.userUrl ?? (authorId ? `https://facebook.com/${authorId}` : '')),\n    published_at: String(src.time ?? src.timestamp ?? src.date ?? ''),\n    group_name: String(src.groupTitle ?? src.groupName ?? ''),\n    engagement_count: engagement,\n    engagement_score: Math.min(100, Math.round(20 * Math.log10(engagement + 1))),\n    source_platform: $('Business Config').first().json.socialPlatform\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [200, -100],
+      "id": "88835515-4568-4f22-be05-5c150a1be704",
+      "name": "Normalize Post"
+    },
+    {
+      "parameters": {
+        "jsCode": "const state = $getWorkflowStaticData('global');\nstate.seenPosts = state.seenPosts || {};\nconst now = Date.now();\nconst ttl = 30 * 24 * 60 * 60 * 1000;\nfor (const [key, timestamp] of Object.entries(state.seenPosts)) {\n  if (now - Number(timestamp) > ttl) delete state.seenPosts[key];\n}\nconst fresh = [];\nfor (const item of $input.all()) {\n  const j = item.json;\n  if (!j.text || j.text.length < 15) continue;\n  const key = String(j.post_id || j.post_url || `${j.author_url}|${j.published_at}|${j.text.slice(0, 160)}`);\n  if (state.seenPosts[key]) continue;\n  state.seenPosts[key] = now;\n  fresh.push(item);\n}\nreturn fresh;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [440, -100],
+      "id": "5cc98524-b83c-4c1e-a671-970363329b9d",
+      "name": "Remove Seen Posts"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là chuyên gia social listening, phân tích hành vi khách hàng và qualification lead cho dịch vụ làm đẹp cao cấp.\n\nTHÔNG TIN DOANH NGHIỆP\n- Thương hiệu: {{ $('Business Config').first().json.businessName }}\n- Dịch vụ: {{ $('Business Config').first().json.serviceDescription }}\n- Khách mục tiêu: {{ $('Business Config').first().json.targetCustomer }}\n- Khu vực phục vụ: {{ $('Business Config').first().json.serviceArea }}\n- Giá tham khảo: {{ $('Business Config').first().json.offerPrice }}\n- Kênh chuyển đổi: {{ $('Business Config').first().json.conversionChannel }}\n- CTA: {{ $('Business Config').first().json.cta }}\n\nBÀI VIẾT/BÌNH LUẬN CẦN PHÂN TÍCH\n- Nội dung: {{ $json.text }}\n- Nhóm/trang: {{ $json.group_name }}\n- Thời gian: {{ $json.published_at }}\n- Tương tác: {{ $json.engagement_count }}\n- Tác giả công khai: {{ $json.author_name }}\n\nNHIỆM VỤ\n1. Xác định nhu cầu, pain point, kết quả mong muốn, rào cản và giai đoạn mua.\n2. Chấm 0-100 cho buying_intent, service_fit, urgency, reachability và content_priority. Chỉ dùng bằng chứng có trong nội dung; không suy đoán thu nhập, bệnh lý hay thuộc tính nhạy cảm.\n3. Viết evidence ngắn nêu tín hiệu cụ thể.\n4. Đề xuất offer và next action phù hợp.\n5. Soạn một phản hồi công khai và một DM cá nhân hóa, tôn trọng, không gây áp lực. Đây chỉ là bản nháp để con người duyệt.\n6. Đề xuất content angle, hook, outline và CTA nhằm kéo khách inbound.\n\nQUY TẮC AN TOÀN\n- Không chẩn đoán, không hứa/đảm bảo kết quả, không body-shaming.\n- Không bịa testimonial, chứng nhận hoặc kết quả trước/sau.\n- Nếu bài không liên quan, service_fit và buying_intent phải thấp.\n- Nếu thiếu dữ kiện, ghi rõ thay vì suy đoán.\n- post_type chọn đúng một: Nhu cầu dịch vụ, Hỏi đáp, Chia sẻ trải nghiệm, Khiếu nại, Tuyển dụng, Tìm đối tác, Quảng cáo, Khác.\n- customer_stage chọn đúng một: Chưa nhận thức, Nhận thức vấn đề, Đang nghiên cứu, Đang cân nhắc, Sẵn sàng tư vấn, Không liên quan.\n\nTrả JSON đúng schema, không thêm giải thích.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Bạn làm việc cho một thương hiệu chăm sóc sắc đẹp cao cấp. Mục tiêu là phát hiện nhu cầu thật, bảo vệ sự tôn trọng và quyền riêng tư của khách hàng, đồng thời tạo insight có thể dùng cho sales và content. Luôn ưu tiên độ chính xác hơn số lượng lead.",
+          "batching": {
+            "batchSize": 1,
+            "delayBetweenBatches": 1500
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [720, -100],
+      "id": "2c25b863-3dd8-459c-8ff4-fb94ad3f127f",
+      "name": "AI Lead & Insight Analyst",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"post_type\": \"Nhu cầu dịch vụ\",\n  \"customer_stage\": \"Đang cân nhắc\",\n  \"need\": \"Tìm giải pháp làm đẹp phù hợp\",\n  \"pain_point\": \"Lo ngại kết quả không tự nhiên\",\n  \"desired_result\": \"Kết quả tự nhiên và an toàn\",\n  \"objections\": [\"an toàn\", \"thời gian hồi phục\"],\n  \"location\": \"Không rõ\",\n  \"buying_intent\": 80,\n  \"service_fit\": 75,\n  \"urgency\": 60,\n  \"reachability\": 70,\n  \"evidence\": \"Tác giả hỏi trực tiếp nơi cung cấp dịch vụ và chi phí\",\n  \"recommended_offer\": \"Buổi đánh giá nhu cầu riêng\",\n  \"next_action\": \"Phản hồi hữu ích rồi xin phép gửi thông tin chi tiết\",\n  \"draft_public_reply\": \"Bạn có thể ưu tiên kiểm tra chuyên môn, quy trình và kế hoạch phù hợp với mục tiêu cá nhân. Nếu bạn muốn, bên mình có thể gửi checklist tham khảo.\",\n  \"draft_dm\": \"Chào bạn, mình thấy bạn đang tìm hiểu giải pháp làm đẹp. Nếu phù hợp, mình có thể gửi một checklist giúp bạn chuẩn bị câu hỏi trước khi tư vấn.\",\n  \"content_priority\": 85,\n  \"content_angle\": \"Checklist chọn nơi làm đẹp cao cấp\",\n  \"content_hook\": \"5 câu cần hỏi trước khi quyết định\",\n  \"content_outline\": \"Chuyên môn; quy trình; kỳ vọng; chăm sóc; chi phí\",\n  \"content_cta\": \"Đăng ký buổi đánh giá nhu cầu riêng\",\n  \"confidence\": 82\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [820, 160],
+      "id": "2f94a285-576d-4ad0-a3d1-7c591062355f",
+      "name": "Lead Analysis Parser"
+    },
+    {
+      "parameters": {
+        "projectId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_CLOUD_PROJECT_ID",
+          "mode": "list",
+          "cachedResultName": "YOUR_GOOGLE_CLOUD_PROJECT_ID"
+        },
+        "modelName": "gemini-2.5-flash-lite",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleVertex",
+      "typeVersion": 1,
+      "position": [560, 160],
+      "id": "95439309-bf2f-40fc-95c1-286e34557026",
+      "name": "Google Vertex Model"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const analysis = $json.output ?? $json;\nconst post = $items('Remove Seen Posts')[$itemIndex]?.json ?? {};\nconst config = $items('Business Config')[0]?.json ?? {};\nconst clamp = value => Math.max(0, Math.min(100, Number(value) || 0));\nconst buyingIntent = clamp(analysis.buying_intent);\nconst serviceFit = clamp(analysis.service_fit);\nconst urgency = clamp(analysis.urgency);\nconst reachability = clamp(analysis.reachability);\nconst engagementScore = clamp(post.engagement_score);\nconst leadScore = Math.round(0.40 * buyingIntent + 0.25 * serviceFit + 0.20 * urgency + 0.10 * reachability + 0.05 * engagementScore);\nconst hot = Number(config.hotLeadThreshold ?? 75);\nconst warm = Number(config.warmLeadThreshold ?? 50);\nconst leadTemperature = leadScore >= hot ? 'Hot' : leadScore >= warm ? 'Warm' : 'Insight';\nreturn {\n  json: {\n    ...post,\n    ...analysis,\n    buying_intent: buyingIntent,\n    service_fit: serviceFit,\n    urgency,\n    reachability,\n    content_priority: clamp(analysis.content_priority),\n    confidence: clamp(analysis.confidence),\n    lead_score: leadScore,\n    lead_temperature: leadTemperature,\n    discovered_at: new Date().toISOString(),\n    status: leadTemperature === 'Hot' ? 'New - needs human review' : leadTemperature === 'Warm' ? 'Nurture' : 'Insight only'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [980, -100],
+      "id": "ad7d7041-ae60-4479-9f43-de15442bcde2",
+      "name": "Calculate Lead Score"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Beauty Lead Engine"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "leads",
+          "mode": "list",
+          "cachedResultName": "leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "discovered_at": "={{ $json.discovered_at }}",
+            "post_id": "={{ $json.post_id }}",
+            "post_url": "={{ $json.post_url }}",
+            "content": "={{ $json.text }}",
+            "author_name": "={{ $json.author_name }}",
+            "author_url": "={{ $json.author_url }}",
+            "published_at": "={{ $json.published_at }}",
+            "group": "={{ $json.group_name }}",
+            "engagement": "={{ $json.engagement_count }}",
+            "post_type": "={{ $json.post_type }}",
+            "customer_stage": "={{ $json.customer_stage }}",
+            "need": "={{ $json.need }}",
+            "pain_point": "={{ $json.pain_point }}",
+            "desired_result": "={{ $json.desired_result }}",
+            "objections": "={{ Array.isArray($json.objections) ? $json.objections.join(', ') : $json.objections }}",
+            "location": "={{ $json.location }}",
+            "buying_intent": "={{ $json.buying_intent }}",
+            "service_fit": "={{ $json.service_fit }}",
+            "urgency": "={{ $json.urgency }}",
+            "reachability": "={{ $json.reachability }}",
+            "lead_score": "={{ $json.lead_score }}",
+            "lead_temperature": "={{ $json.lead_temperature }}",
+            "evidence": "={{ $json.evidence }}",
+            "recommended_offer": "={{ $json.recommended_offer }}",
+            "next_action": "={{ $json.next_action }}",
+            "draft_public_reply": "={{ $json.draft_public_reply }}",
+            "draft_dm": "={{ $json.draft_dm }}",
+            "content_priority": "={{ $json.content_priority }}",
+            "content_angle": "={{ $json.content_angle }}",
+            "confidence": "={{ $json.confidence }}",
+            "status": "={{ $json.status }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {"id":"discovered_at","displayName":"discovered_at","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"post_id","displayName":"post_id","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"post_url","displayName":"post_url","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"content","displayName":"content","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"author_name","displayName":"author_name","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"author_url","displayName":"author_url","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"published_at","displayName":"published_at","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"group","displayName":"group","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"engagement","displayName":"engagement","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"post_type","displayName":"post_type","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"customer_stage","displayName":"customer_stage","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"need","displayName":"need","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"pain_point","displayName":"pain_point","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"desired_result","displayName":"desired_result","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"objections","displayName":"objections","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"location","displayName":"location","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"buying_intent","displayName":"buying_intent","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"service_fit","displayName":"service_fit","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"urgency","displayName":"urgency","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"reachability","displayName":"reachability","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"lead_score","displayName":"lead_score","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"lead_temperature","displayName":"lead_temperature","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"evidence","displayName":"evidence","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"recommended_offer","displayName":"recommended_offer","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"next_action","displayName":"next_action","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"draft_public_reply","displayName":"draft_public_reply","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"draft_dm","displayName":"draft_dm","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"content_priority","displayName":"content_priority","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"content_angle","displayName":"content_angle","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"confidence","displayName":"confidence","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"status","displayName":"status","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true}
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1240, -220],
+      "id": "584fab5e-ac74-4544-a187-5864795550ac",
+      "name": "Append Lead CRM"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7d844738-a33b-4765-820d-0962ca053a5e",
+              "leftValue": "={{ $('Calculate Lead Score').item.json.lead_score }}",
+              "rightValue": "={{ $('Business Config').first().json.hotLeadThreshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1480, -220],
+      "id": "02febafd-cf19-4b70-b7ef-7c4f3b176eda",
+      "name": "Is Hot Lead"
+    },
+    {
+      "parameters": {
+        "chatId": "YOUR_TELEGRAM_CHAT_ID",
+        "text": "=🔥 LEAD NÓNG — CẦN NGƯỜI DUYỆT\n\nĐiểm: {{ $('Calculate Lead Score').item.json.lead_score }}/100 | Confidence: {{ $('Calculate Lead Score').item.json.confidence }}/100\nGiai đoạn: {{ $('Calculate Lead Score').item.json.customer_stage }}\nNhu cầu: {{ $('Calculate Lead Score').item.json.need }}\nPain point: {{ $('Calculate Lead Score').item.json.pain_point }}\nRào cản: {{ Array.isArray($('Calculate Lead Score').item.json.objections) ? $('Calculate Lead Score').item.json.objections.join(', ') : $('Calculate Lead Score').item.json.objections }}\nKhu vực: {{ $('Calculate Lead Score').item.json.location }}\nBằng chứng: {{ $('Calculate Lead Score').item.json.evidence }}\n\nTác giả: {{ $('Calculate Lead Score').item.json.author_name }}\nHồ sơ: {{ $('Calculate Lead Score').item.json.author_url }}\nBài gốc: {{ $('Calculate Lead Score').item.json.post_url }}\n\nĐề xuất offer: {{ $('Calculate Lead Score').item.json.recommended_offer }}\nBước tiếp theo: {{ $('Calculate Lead Score').item.json.next_action }}\n\n💬 NHÁP PHẢN HỒI CÔNG KHAI\n{{ $('Calculate Lead Score').item.json.draft_public_reply }}\n\n✉️ NHÁP DM\n{{ $('Calculate Lead Score').item.json.draft_dm }}\n\n⚠️ Chỉ gửi sau khi người phụ trách kiểm tra nội dung và hồ sơ khách.",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1720, -300],
+      "id": "a26d7187-94a4-44a0-9ce6-37186d393ea4",
+      "name": "Telegram - Hot Lead Alert"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "53ddff4e-aa58-49df-ad85-af164a5f391c",
+              "leftValue": "={{ $json.content_priority }}",
+              "rightValue": "={{ $('Business Config').first().json.contentThreshold }}",
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [1240, 40],
+      "id": "8329b487-eeb0-481e-bb3e-d33852b2cab4",
+      "name": "Has Content Opportunity"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bạn là content strategist cho thương hiệu làm đẹp cao cấp. Hãy biến insight thật dưới đây thành một nội dung có khả năng kéo khách inbound.\n\nTHƯƠNG HIỆU\n- Dịch vụ: {{ $('Business Config').first().json.serviceDescription }}\n- Khách mục tiêu: {{ $('Business Config').first().json.targetCustomer }}\n- Khu vực: {{ $('Business Config').first().json.serviceArea }}\n- Nền tảng: {{ $('Business Config').first().json.socialPlatform }}\n- CTA: {{ $('Business Config').first().json.cta }}\n\nINSIGHT\n- Pain point: {{ $json.pain_point }}\n- Kết quả mong muốn: {{ $json.desired_result }}\n- Rào cản: {{ Array.isArray($json.objections) ? $json.objections.join(', ') : $json.objections }}\n- Góc nội dung: {{ $json.content_angle }}\n- Hook gợi ý: {{ $json.content_hook }}\n- Outline: {{ $json.content_outline }}\n\nViết một bản nháp hữu ích, tinh tế, cao cấp. Không chẩn đoán, body-shaming, tạo sợ hãi, cam kết kết quả hoặc bịa số liệu/testimonial. Không nhắc tới hay làm lộ danh tính người viết bài nguồn. CTA chỉ mời đánh giá/tư vấn, không gây áp lực. Trả JSON đúng schema.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "Tạo nội dung giáo dục và xây dựng niềm tin cho dịch vụ làm đẹp cao cấp. Nội dung phải phù hợp để con người rà soát trước khi đăng.",
+          "batching": {
+            "batchSize": 1,
+            "delayBetweenBatches": 1500
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [1480, 40],
+      "id": "e865556d-fc3c-41a0-9922-b1cf102db2ce",
+      "name": "AI Content Draft Writer",
+      "retryOnFail": true,
+      "waitBetweenTries": 5000
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"theme\": \"Cách đánh giá một dịch vụ làm đẹp cao cấp\",\n  \"platform\": \"Facebook\",\n  \"content_type\": \"Bài giáo dục\",\n  \"hook\": \"5 câu nên hỏi trước khi quyết định\",\n  \"caption\": \"Một quyết định làm đẹp phù hợp bắt đầu từ việc hiểu rõ mục tiêu, quy trình và kỳ vọng thực tế...\",\n  \"cta\": \"Đăng ký buổi đánh giá nhu cầu riêng với chuyên viên\",\n  \"visual_idea\": \"Carousel tối giản gồm 5 câu hỏi cần chuẩn bị\",\n  \"compliance_note\": \"Cần rà soát claim và hình ảnh trước khi đăng\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [1570, 300],
+      "id": "59723bc4-94ee-4db3-808a-b788d02c12b3",
+      "name": "Content Draft Parser"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "YOUR_GOOGLE_SHEET_ID",
+          "mode": "list",
+          "cachedResultName": "Beauty Lead Engine"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "content_plan",
+          "mode": "list",
+          "cachedResultName": "content_plan"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "generated_at": "={{ $now.toISO() }}",
+            "source_post_url": "={{ $('Calculate Lead Score').item.json.post_url }}",
+            "theme": "={{ $json.output.theme }}",
+            "platform": "={{ $json.output.platform }}",
+            "content_type": "={{ $json.output.content_type }}",
+            "hook": "={{ $json.output.hook }}",
+            "caption": "={{ $json.output.caption }}",
+            "cta": "={{ $json.output.cta }}",
+            "visual_idea": "={{ $json.output.visual_idea }}",
+            "compliance_note": "={{ $json.output.compliance_note }}",
+            "status": "Draft - human review"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {"id":"generated_at","displayName":"generated_at","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"source_post_url","displayName":"source_post_url","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"theme","displayName":"theme","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"platform","displayName":"platform","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"content_type","displayName":"content_type","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"hook","displayName":"hook","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"caption","displayName":"caption","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"cta","displayName":"cta","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"visual_idea","displayName":"visual_idea","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"compliance_note","displayName":"compliance_note","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true},
+            {"id":"status","displayName":"status","required":false,"defaultMatch":false,"display":true,"type":"string","canBeUsedToMatch":true}
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [1720, 40],
+      "id": "c4919fd3-e5b6-4d80-9a47-c6d71fa82cef",
+      "name": "Append Content Plan"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Test": {
+      "main": [[{"node":"Business Config","type":"main","index":0}]]
+    },
+    "Scan Every 2 Hours": {
+      "main": [[{"node":"Business Config","type":"main","index":0}]]
+    },
+    "Business Config": {
+      "main": [[{"node":"Get Target Groups","type":"main","index":0}]]
+    },
+    "Get Target Groups": {
+      "main": [[{"node":"Build Apify Input","type":"main","index":0}]]
+    },
+    "Build Apify Input": {
+      "main": [[{"node":"Apify - Run Facebook Scraper","type":"main","index":0}]]
+    },
+    "Apify - Run Facebook Scraper": {
+      "main": [[{"node":"Apify - Get Posts","type":"main","index":0}]]
+    },
+    "Apify - Get Posts": {
+      "main": [[{"node":"Split Posts","type":"main","index":0}]]
+    },
+    "Split Posts": {
+      "main": [[{"node":"Normalize Post","type":"main","index":0}]]
+    },
+    "Normalize Post": {
+      "main": [[{"node":"Remove Seen Posts","type":"main","index":0}]]
+    },
+    "Remove Seen Posts": {
+      "main": [[{"node":"AI Lead & Insight Analyst","type":"main","index":0}]]
+    },
+    "Google Vertex Model": {
+      "ai_languageModel": [[
+        {"node":"AI Lead & Insight Analyst","type":"ai_languageModel","index":0},
+        {"node":"AI Content Draft Writer","type":"ai_languageModel","index":0}
+      ]]
+    },
+    "Lead Analysis Parser": {
+      "ai_outputParser": [[{"node":"AI Lead & Insight Analyst","type":"ai_outputParser","index":0}]]
+    },
+    "AI Lead & Insight Analyst": {
+      "main": [[{"node":"Calculate Lead Score","type":"main","index":0}]]
+    },
+    "Calculate Lead Score": {
+      "main": [[
+        {"node":"Append Lead CRM","type":"main","index":0},
+        {"node":"Has Content Opportunity","type":"main","index":0}
+      ]]
+    },
+    "Append Lead CRM": {
+      "main": [[{"node":"Is Hot Lead","type":"main","index":0}]]
+    },
+    "Is Hot Lead": {
+      "main": [
+        [{"node":"Telegram - Hot Lead Alert","type":"main","index":0}],
+        []
+      ]
+    },
+    "Telegram - Hot Lead Alert": {
+      "main": [[]]
+    },
+    "Has Content Opportunity": {
+      "main": [
+        [{"node":"AI Content Draft Writer","type":"main","index":0}],
+        []
+      ]
+    },
+    "Content Draft Parser": {
+      "ai_outputParser": [[{"node":"AI Content Draft Writer","type":"ai_outputParser","index":0}]]
+    },
+    "AI Content Draft Writer": {
+      "main": [[{"node":"Append Content Plan","type":"main","index":0}]]
+    },
+    "Append Content Plan": {
+      "main": [[]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timezone": "Asia/Ho_Chi_Minh",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "tags": []
+}
